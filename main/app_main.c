@@ -1,6 +1,3 @@
-// #include <stdio.h>
-// #include <stdint.h>
-// #include <stddef.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,10 +9,6 @@
 #include "nvs_flash.h"
 
 #include "tcpip_adapter.h"
-// #include "protocol_examples_common.h"
-
-#include "freertos/semphr.h"
-#include "freertos/queue.h"
 
 #include "lwip/sockets.h"
 #include "lwip/dns.h"
@@ -24,6 +17,7 @@
 #include "lwip/sys.h"
 
 #include "mqtt_client.h"
+#include "DHT22.h"
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -37,6 +31,7 @@ static EventGroupHandle_t s_wifi_event_group;
 static const char *TAG = "HUMIDITY";
 
 static int s_retry_num = 0;
+static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
@@ -62,8 +57,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "Got ip:%s",
-                 ip4addr_ntoa(&event->ip_info.ip));
+        ESP_LOGI(TAG, "Assigned IP:%s", ip4addr_ntoa(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
@@ -126,44 +120,17 @@ void wifi_init_sta()
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
-    esp_mqtt_client_handle_t client = event->client;
-    int msg_id;
     // your_context_t *context = event->context;
     switch (event->event_id)
     {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-        msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
-        ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
         break;
-
-    case MQTT_EVENT_SUBSCRIBED:
-        ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-        break;
-    case MQTT_EVENT_UNSUBSCRIBED:
-        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
-        break;
-    case MQTT_EVENT_PUBLISHED:
+    case MQTT_EVENT_PUBLISHED: // Not received when publishing with qos=0
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-        break;
-    case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA=%.*s\r\n", event->data_len, event->data);
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -187,9 +154,32 @@ static void mqtt_app_start(void)
         .uri = CONFIG_BROKER_URL,
     };
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
-    esp_mqtt_client_start(client);
+    s_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(s_mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, s_mqtt_client);
+    esp_mqtt_client_start(s_mqtt_client);
+}
+
+void DHT_task(void *pvParameter)
+{
+    setDHTgpio(4);
+    char buf[100];
+    float humi = 0;
+    float temp = 0;
+
+    while (1)
+    {
+        errorHandler(readDHT());
+        humi = getHumidity();
+        temp = getTemperature();
+
+        sprintf(buf, "{\"key\":\"humidity\",\"data\":{\"temperature[degC]\":%.1f,\"humidity[%%]\":%.1f}}", temp, humi);
+        ESP_LOGI(TAG, "Temperature %.1f°C | Humidity %.1f%%", temp, humi);
+        esp_mqtt_client_publish(s_mqtt_client, "brewcast/history/humidity", buf, 0, 0, 0);
+
+        // -- wait at least 2 sec before reading again ------------
+        // The interval of whole process must be beyond 2 seconds !!
+        vTaskDelay(5000 / portTICK_RATE_MS);
+    }
 }
 
 void app_main()
@@ -199,12 +189,6 @@ void app_main()
     ESP_LOGI(TAG, "[APP] IDF version: %s", esp_get_idf_version());
 
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
-    esp_log_level_set("MQTT_EXAMPLE", ESP_LOG_VERBOSE);
-    esp_log_level_set("TRANSPORT_TCP", ESP_LOG_VERBOSE);
-    esp_log_level_set("TRANSPORT_SSL", ESP_LOG_VERBOSE);
-    esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
-    esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
 
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -220,4 +204,7 @@ void app_main()
 
     wifi_init_sta();
     mqtt_app_start();
+
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    xTaskCreate(&DHT_task, "DHT", 2048, NULL, 5, NULL);
 }

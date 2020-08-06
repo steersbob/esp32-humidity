@@ -22,5 +22,6 @@ menu "Humidity configuration"
         int "Wifi retry attempts"
         default 5
         help
-            Set the maximum retry attempts when reconnecting to an AP.
+            Maximum number of retry attempts when connecting to an AP.
+
 endmenu
