@@ -1,0 +1,21 @@
+menu "Humidity configuration"
+
+    config BROKER_URL
+        string "Broker URL"
+        default "mqtt://mqtt.eclipse.org"
+        help
+            URL of the broker to connect to
+
+    config ESP_WIFI_SSID
+        string "Wifi SSID"
+        default "myssid"
+        help
+            SSID (network name)
+
+    config ESP_WIFI_PASSWORD
+        string "Wifi password"
+        default "mypassword"
+        help
+            WPA or WPA2 password for Wifi
+
+endmenu
