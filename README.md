@@ -8,18 +8,16 @@ ESP installed through the VSCode Espressif IDF plugin setup.
 
 Additional notes from https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html
 
-Convenience aliases added to `~/.bash_aliases`:
-```
-alias dotdf='. $HOME/esp-idf/export.sh'
-alias idf='idf.py'
-```
+Added the ESP export script to terminal shell args in VSCode settings.
 
 Added user to `dialout` group.
 
-My board (ESP-WROOM-32 dev) requires the 'boot' button to be pressed during the flash,
-when it prints `connecting ....____....`.
-Once it is busy transferring, you can release the button.
-This does not appear to be the case for all models.
+~~My board (ESP-WROOM-32 dev) requires the 'boot' button to be pressed during the flash,~~
+~~when it prints `connecting ....____....`.~~
+~~Once it is busy transferring, you can release the button.~~
+~~Circumventing this issue would require [soldering a capacitator to the board](https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header/).~~
+
+The above does not seem to be the case anymore. Unclear whether this was changed in a ESP update.
 
 DHT22 code copied from https://github.com/gosouth/DHT22.
 
@@ -28,20 +26,22 @@ This will need updating when run on machines not configured to use pyenv.
 
 ## To use
 
+In a new shell, run `source $HOME/esp/esp-idf/export.sh`. (This is done automatically in VSCode terminals)
+
 Due to it including Wifi config info, sdkconfig is included in .gitignore.
 To generate it, run:
 
 ```
-idf menuconfig
+idf.py menuconfig
 ```
 Edit the settings for Humidity.
 
 To flash your ESP32, run:
 
 ```
-idf flash monitor
+idf.py flash monitor
 ```
 
-Press the 'boot' button when it prints `connecting......____....`
+~~Press the 'boot' button when it prints `connecting......____....`~~
 
 Press Ctrl+] to exit monitor.
