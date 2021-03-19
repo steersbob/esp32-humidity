@@ -51,8 +51,8 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
         else
         {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            ESP_LOGI(TAG, "Failed to connect to AP");
         }
-        ESP_LOGI(TAG, "Failed to connect to AP");
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -79,7 +79,8 @@ void wifi_init_sta()
             .password = CONFIG_ESP_WIFI_PASSWORD,
             .pmf_cfg = {
                 .capable = true,
-                .required = false},
+                .required = false,
+            },
         },
     };
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
