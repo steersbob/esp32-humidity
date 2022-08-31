@@ -1,2 +1,9 @@
-idf_component_register(SRCS "DHT22.c" "app_main.c"
-                    INCLUDE_DIRS ".")
+idf_component_register(
+  SRCS
+    wifi.cpp
+    mqtt.cpp
+    sensor.cpp
+    main.cpp
+  INCLUDE_DIRS
+    .
+)
