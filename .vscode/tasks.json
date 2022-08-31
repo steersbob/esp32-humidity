@@ -28,5 +28,19 @@
       },
       "problemMatcher": "$gcc"
     },
+    {
+      "label": "SDK Config",
+      "command": "script/build.sh",
+      "args": [
+        "menuconfig"
+      ],
+      "group": "build",
+      "presentation": {
+        "panel": "shared",
+        "focus": true,
+        "clear": false
+      },
+      "problemMatcher": "$gcc"
+    },
   ]
 }
