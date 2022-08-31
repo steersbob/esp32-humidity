@@ -30,10 +30,10 @@ void sensor_task(void* pvParameter)
 
             std::snprintf(buf, 100,
                           "{"
-                          "\"key\":\"humidity\","
+                          "\"key\":\"DHT22\","
                           "\"data\":{"
                           "\"temperature[degC]\":%.1f,"
-                          "\"humidity[%%]\":%.1f"
+                          "\"humidity[pct]\":%.1f"
                           "}}",
                           temp,
                           humi);
