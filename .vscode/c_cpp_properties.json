@@ -1,25 +1,18 @@
 {
-    "configurations": [
-        {
-            "name": "Linux",
-            "cStandard": "c11",
-            "cppStandard": "c++17",
-            "includePath": [
-                "${config:idf.espIdfPath}/components/**",
-                "${config:idf.espIdfPath}/examples/common_components/protocol_examples_common/**",
-                "${config:idf.espIdfPathWin}/components/**",
-                "${workspaceFolder}/**"
-            ],
-            "browse": {
-                "path": [
-                    "${config:idf.espIdfPath}/components",
-                    "${config:idf.espIdfPathWin}/components",
-                    "${workspaceFolder}"
-                ],
-                "limitSymbolsToIncludedHeaders": false
-            },
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "esp",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "includePath": [
+        ".",
+        "${workspaceFolder}/main",
+        "/opt/esp/idf/components/**",
+        "/opt/esp/tools/xtensa-esp32-elf/**"
+      ],
+      "compilerPath": "/opt/esp/tools/xtensa-esp32-elf/esp-2021r2-patch3-8.4.0/xtensa-esp32-elf/bin/xtensa-esp32-elf-g++",
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+    }
+  ],
+  "version": 4
 }

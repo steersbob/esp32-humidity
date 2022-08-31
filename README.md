@@ -2,46 +2,34 @@
 
 Reads a DHT22 sensor, and publishes MQTT events to Brewblox.
 
-## Notes
+DHT22 code based on https://github.com/gosouth/DHT22.
 
-ESP installed through the VSCode Espressif IDF plugin setup.
+## Config
 
-Additional notes from https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html
+Wifi SSID/password and MQTT broker URL are configured through sdkconfig, with the generated file being ignored in git.
 
-Added the ESP export script to terminal shell args in VSCode settings.
+To generate the sdkconfig file with your settings, run the "SDK Config" task.
+The custom settings can be found under "Humidity configuration".
 
-Added user to `dialout` group.
+## Development: devcontainer
 
-~~My board (ESP-WROOM-32 dev) requires the 'boot' button to be pressed during the flash,~~
-~~when it prints `connecting ....____....`.~~
-~~Once it is busy transferring, you can release the button.~~
-~~Circumventing this issue would require [soldering a capacitator to the board](https://randomnerdtutorials.com/solved-failed-to-connect-to-esp32-timed-out-waiting-for-packet-header/).~~
+The development environment is based on the [development container](https://code.visualstudio.com/docs/remote/containers) feature in the [Visual Studio Code](https://code.visualstudio.com/) editor.
+A [Dockerfile](./.devcontainer/Dockerfile) is provided that includes the required dependencies for most build types.
 
-The above does not seem to be the case anymore. Unclear whether this was changed in a ESP update.
+When opening the repository in VSCode, you will be prompted to reload the editor in the container.
+On first load, it will build the Docker image. This will take somewhere between 5 and 30 minutes, depending on your machine.
 
-DHT22 code copied from https://github.com/gosouth/DHT22.
+When this is done, intellisense, build tasks, and the VSCode terminal will run in the container.
 
-The .vscode/settings.json file includes paths to python executable.
-This will need updating when run on machines not configured to use pyenv.
+If you wish to use a different editor, you will need to either manually build the Docker image, or reproduce the installation steps on your local machine.
 
-## To use
 
-In a new shell, run `source $HOME/esp/esp-idf/export.sh`. (This is done automatically in VSCode terminals)
+## Development: trusted directories
 
-Due to it including Wifi config info, sdkconfig is included in .gitignore.
-To generate it, run:
+The nested ESP submodules have a different owner (root) when installed in the devcontainer.
+To resolve this, run the following commands on the host, and then restart the container:
 
+```sh
+git config --global --add safe.directory /opt/esp/idf
+git config --global --add safe.directory /opt/esp/idf/components/openthread/openthread
 ```
-idf.py menuconfig
-```
-Edit the settings for Humidity.
-
-To flash your ESP32, run:
-
-```
-idf.py flash monitor
-```
-
-~~Press the 'boot' button when it prints `connecting......____....`~~
-
-Press Ctrl+] to exit monitor.
