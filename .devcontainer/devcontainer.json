@@ -2,28 +2,26 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.209.6/containers/ubuntu
 {
   "name": "esp32-humidity",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "cacheFrom": "kargathia/esp32-humidity-devcontainer:focal",
-    "args": {
-      "USERNAME": "vscode"
-    }
-  },
+  "image": "kargathia/esp32-humidity-devcontainer:bullseye",
   "containerEnv": {},
   // Set *default* container specific settings.json values on container create.
-  "settings": {
-    "shellformat.path": "/usr/local/bin/shfmt"
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "shellformat.path": "/usr/local/bin/shfmt"
+      },
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "editorconfig.editorconfig",
+        "ms-vscode.cpptools",
+        "ms-python.python",
+        "timonwong.shellcheck",
+        "huizhou.githd",
+        "foxundermoon.shell-format",
+        "twxs.cmake"
+      ]
+    }
   },
-  // Add the IDs of extensions you want installed when the container is created.
-  "extensions": [
-    "editorconfig.editorconfig",
-    "ms-vscode.cpptools",
-    "ms-python.python",
-    "timonwong.shellcheck",
-    "huizhou.githd",
-    "foxundermoon.shell-format",
-    "twxs.cmake"
-  ],
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   "mounts": [

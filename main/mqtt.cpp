@@ -22,7 +22,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_t* event)
         ESP_LOGI(TAG, "Disconnected");
         break;
     case MQTT_EVENT_PUBLISHED: // Not received when publishing with qos=0
-        ESP_LOGI(TAG, "Published, msg_id=%d", event->msg_id);
+        ESP_LOGI(TAG, "Published, msg_id=%ld", event->msg_id);
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "Error");
@@ -47,11 +47,13 @@ namespace humidity {
 
 void mqtt_init()
 {
-    esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = CONFIG_BROKER_URL,
-    };
+    esp_mqtt_client_config_t mqtt_cfg{
+        .broker{
+            .address{
+                .uri = CONFIG_BROKER_URL,
+            }}};
 
-    ESP_LOGI(TAG, "Connecting to broker:'%s' ...", mqtt_cfg.uri);
+    ESP_LOGI(TAG, "Connecting to broker:'%s' ...", CONFIG_BROKER_URL);
 
     s_mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(s_mqtt_client,
