@@ -7,6 +7,7 @@
       "includePath": [
         ".",
         "${workspaceFolder}/main",
+        "${workspaceFolder}/managed_components/espressif__asio/asio/asio/include",
         "/opt/esp/idf/components/**",
         "/opt/esp/tools/xtensa-esp32-elf/**"
       ],

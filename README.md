@@ -17,19 +17,6 @@ The development environment is based on the [development container](https://code
 A [Dockerfile](./.devcontainer/Dockerfile) is provided that includes the required dependencies for most build types.
 
 When opening the repository in VSCode, you will be prompted to reload the editor in the container.
-On first load, it will build the Docker image. This will take somewhere between 5 and 30 minutes, depending on your machine.
-
 When this is done, intellisense, build tasks, and the VSCode terminal will run in the container.
 
 If you wish to use a different editor, you will need to either manually build the Docker image, or reproduce the installation steps on your local machine.
-
-
-## Development: trusted directories
-
-The nested ESP submodules have a different owner (root) when installed in the devcontainer.
-To resolve this, run the following commands on the host, and then restart the container:
-
-```sh
-git config --global --add safe.directory /opt/esp/idf
-git config --global --add safe.directory /opt/esp/idf/components/openthread/openthread
-```

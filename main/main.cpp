@@ -2,62 +2,64 @@
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "json.hpp"
 #include "mqtt.hpp"
 #include "nvs_flash.h"
 #include "sensor.hpp"
 #include "wifi.hpp"
+#include <asio.hpp>
 #include <string>
 
 static const char* TAG = "humidity";
+std::unique_ptr<asio::steady_timer> task_timer;
 
 extern "C" {
 void app_main();
 }
 
-void sensor_task(void* pvParameter)
+void publish_sensor_values()
 {
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    char buf[100];
-    float humi = 0;
-    float temp = 0;
+    float temp = humidity::get_temperature();
+    float humi = humidity::get_humidity();
+    auto obj = json::JSON();
 
-    while (true) {
-        auto err = humidity::read_sensor();
-        switch (err) {
-        case humidity::SensorError::OK:
-            humi = humidity::get_humidity();
-            temp = humidity::get_temperature();
+    obj["key"] = "DHT22";
+    obj["data"] = json::Object();
+    obj["data"]["temperature[degC]"] = temp;
+    obj["data"]["humidity[pct]"] = humi;
 
-            std::snprintf(buf, 100,
-                          "{"
-                          "\"key\":\"DHT22\","
-                          "\"data\":{"
-                          "\"temperature[degC]\":%.1f,"
-                          "\"humidity[pct]\":%.1f"
-                          "}}",
-                          temp,
-                          humi);
+    ESP_LOGI(TAG, "Temperature %.1f°C | Humidity %.1f%%", temp, humi);
+    humidity::publish("brewcast/history/humidity", obj.dump().c_str());
+}
 
-            ESP_LOGI(TAG, "Temperature %.1f°C | Humidity %.1f%%", temp, humi);
-            humidity::publish("brewcast/history/humidity", buf);
-            break;
+void sensor_task(const std::error_code& ec)
+{
+    if (ec) {
+        ESP_LOGI(TAG, "Sensor task error: %s", ec.message());
+        return;
+    }
 
-        case humidity::SensorError::CHECKSUM_ERROR:
-            ESP_LOGE(TAG, "Sensor read error: CHECKSUM_ERROR");
-            break;
+    switch (humidity::read_sensor()) {
+    case humidity::SensorError::OK:
+        publish_sensor_values();
+        break;
 
-        case humidity::SensorError::TIMEOUT_ERROR:
-            ESP_LOGE(TAG, "Sensor read error: TIMEOUT_ERROR");
-            break;
+    case humidity::SensorError::CHECKSUM_ERROR:
+        ESP_LOGE(TAG, "Sensor read error: CHECKSUM_ERROR");
+        break;
 
-        default:
-            ESP_LOGE(TAG, "Sensor read error: unknown error");
-            break;
-        }
+    case humidity::SensorError::TIMEOUT_ERROR:
+        ESP_LOGE(TAG, "Sensor read error: TIMEOUT_ERROR");
+        break;
 
-        // -- wait at least 2 sec before reading again ------------
-        // The interval of whole process must be beyond 2 seconds !!
-        vTaskDelay(pdMS_TO_TICKS(5000));
+    default:
+        ESP_LOGE(TAG, "Sensor read error: unknown error");
+        break;
+    }
+
+    if (task_timer) {
+        task_timer->expires_from_now(std::chrono::seconds(5));
+        task_timer->async_wait(sensor_task);
     }
 }
 
@@ -74,5 +76,11 @@ void app_main()
     humidity::wifi_init();
     humidity::mqtt_init();
 
-    xTaskCreate(&sensor_task, "Sensor", 2048, NULL, 5, NULL);
+    static asio::io_context ioc;
+    task_timer = std::make_unique<asio::steady_timer>(ioc);
+
+    task_timer->expires_from_now(std::chrono::seconds(1));
+    task_timer->async_wait(sensor_task);
+
+    ioc.run();
 }
