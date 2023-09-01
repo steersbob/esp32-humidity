@@ -1,3 +1,5 @@
+#include "intellisense.hpp"
+
 #include "esp_log.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
@@ -7,7 +9,9 @@
 #include "nvs_flash.h"
 #include "sensor.hpp"
 #include "wifi.hpp"
+#include <array>
 #include <asio.hpp>
+#include <ranges>
 #include <string>
 
 static const char* TAG = "humidity";
@@ -23,7 +27,7 @@ void publish_sensor_values()
     float humi = humidity::get_humidity();
     auto obj = json::JSON();
 
-    obj["key"] = "DHT22";
+    obj["key"] = humidity::device_id().data();
     obj["data"] = json::Object();
     obj["data"]["temperature[degC]"] = temp;
     obj["data"]["humidity[pct]"] = humi;

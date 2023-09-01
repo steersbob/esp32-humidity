@@ -10,7 +10,9 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <string>
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
@@ -46,7 +48,29 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
+constexpr char _nibble_d2h(uint8_t bin)
+{
+    return char(bin + (bin > 9 ? 'A' - 10 : '0'));
+}
+
 namespace humidity {
+
+std::string_view device_id()
+{
+    static std::string id;
+    if (id.empty()) {
+        std::array<uint8_t, 6> mac;
+        if (esp_wifi_get_mac(WIFI_IF_STA, mac.data()) == ESP_OK) {
+            id.append("DHT22/MAC");
+            for (const auto i : mac) {
+                id.push_back(':');
+                id.push_back(_nibble_d2h(uint8_t(i & 0xF0) >> 4));
+                id.push_back(_nibble_d2h(uint8_t(i & 0xF)));
+            }
+        }
+    }
+    return id;
+}
 
 void wifi_init()
 {
